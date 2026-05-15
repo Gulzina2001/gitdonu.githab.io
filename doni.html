@@ -1,0 +1,301 @@
+"<!DOCTYPE html>
+<html lang="ru>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room, Door and Kittens</title>
+    <style>
+        /* Чистый белый фон */
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: sans-serif;
+            user-select: none;
+        }
+
+        /* Общий контейнер */
+        .scene-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 50px;
+        }
+
+        /* Дверная коробка */
+        .door-frame {
+            position: relative;
+            width: 200px;
+            height: 330px;
+            background: #111111; /* Темнота внутри по умолчанию */
+            border: 10px solid #222222;
+            border-bottom: 14px solid #1a1a1a;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            perspective: 1200px; 
+            transition: background-color 0.4s ease;
+        }
+
+        /* Когда свет ВКЛЮЧЕН */
+        .scene-container.light-on .door-frame {
+            background: #fff5e6; /* Уютный свет внутри */
+        }
+
+        /* Свет на полу перед дверью */
+        .floor-glow {
+            position: absolute;
+            bottom: -140px;
+            left: -120px;
+            width: 440px;
+            height: 200px;
+            background: radial-gradient(ellipse at top, rgba(255, 230, 180, 0.7) 0%, transparent 65%);
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            transform: scaleY(0.5);
+            transition: opacity 0.5s ease;
+        }
+        .scene-container.light-on .door.open ~ .floor-glow {
+            opacity: 1;
+        }
+
+        /* Дверь */
+        .door {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(90deg, #8b0000 0%, #b30000 10%, #8b0000 100%);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            transform-origin: left center;
+            transition: transform 1.4s cubic-bezier(0.4, 0, 0.1, 1);
+            z-index: 10; /* Дверь поверх всего */
+        }
+        .door-panel {
+            position: absolute; left: 15px; right: 15px;
+            border: 3px solid #660000; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.4);
+        }
+        .panel-top { top: 15px; bottom: 52%; }
+        .panel-bottom { top: 52%; bottom: 15px; }
+        .handle {
+            position: absolute; top: 50%; right: 15px; width: 14px; height: 14px;
+            background: radial-gradient(circle, #d4af37 20%, #aa8010 100%);
+            border-radius: 50%; box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.4);
+        }
+        .door.open {
+            transform: rotateY(-115deg);
+            box-shadow: 5px 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* ВЫКЛЮЧАТЕЛЬ */
+        .switch-plate {
+            width: 45px; height: 45px; background: #f5f5f5;
+            border: 1px solid #ddd; border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+        }
+        .switch-button {
+            width: 20px; height: 28px; background: #ffffff;
+            border: 1px solid #ccc; border-radius: 2px;
+            box-shadow: 0 3px 0 #ddd, 0 4px 5px rgba(0,0,0,0.1);
+            transition: transform 0.1s, box-shadow 0.1s;
+            transform: rotateX(15deg);
+        }
+        .scene-container.light-on .switch-button {
+            transform: rotateX(-15deg);
+            box-shadow: 0 -3px 0 #eee, 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* КОНТЕЙНЕР ДЛЯ КОТЯТ */
+        .kittens-wrapper {
+            position: absolute;
+            bottom: -5px; left: 0; width: 100%; height: 70px;
+            z-index: 5; pointer-events: none;
+        }
+
+        /* БАЗОВЫЙ СТИЛЬ КОТЕНКА */
+        .cat {
+            position: absolute;
+            bottom: 0; left: 75px;
+            width: 50px; height: 60px;
+            opacity: 0;
+            transform: scale(0.4) translateY(20px);
+            transition: transform 1.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease;
+        }
+
+        /* Анатомия котят */
+        .cat-body {
+            position: absolute; bottom: 0; left: 5px; width: 38px; height: 34px;
+            border-radius: 50% 50% 30% 30%; box-shadow: inset -3px -3px 6px rgba(0,0,0,0.1), 2px 4px 6px rgba(0,0,0,0.05);
+        }
+        .cat-head {
+            position: absolute; bottom: 26px; left: 11px; width: 26px; height: 26px;
+            border-radius: 50%; box-shadow: inset -2px -2px 4px rgba(0,0,0,0.1);
+        }
+        .cat-ear {
+            position: absolute; width: 0; height: 0;
+            border-left: 6px solid transparent; border-right: 6px solid transparent;
+        }
+        .cat-ear::after {
+            content: ''; position: absolute; top: 3px; left: -3px;
+            border-left: 3px solid transparent; border-right: 3px solid transparent;
+            border-bottom: 7px solid #ffb6c1;
+        }
+        .ear-left { top: -6px; left: -1px; transform: rotate(-12deg); }
+        .ear-right { top: -6px; right: -1px; transform: rotate(12deg); }
+        
+        .cat-eye {
+            position: absolute; top: 9px; width: 5px; height: 5px;
+            background: #20b2aa; border-radius: 50%;
+        }
+        .eye-left { left: 4px; } .eye-right { right: 4px; }
+        .cat-nose {
+            position: absolute; top: 15px; left: 11px; width: 4px; height: 3px;
+            background: #ffb6c1; border-radius: 50%;
+        }
+        .cat-tail {
+            position: absolute; right: -5px; bottom: 6px; width: 8px; height: 28px;
+            border-radius: 4px; transform-origin: bottom center;
+            animation: tailWag 2s infinite alternate ease-in-out;
+        }
+
+        /* РАЗНОЦВЕТНЫЕ СКИНЫ ДЛЯ КОТЯТ */
+        /* 1. Белый */
+        .cat.white .cat-body, .cat.white .cat-head, .cat.white .cat-tail { background: #ffffff; }
+        .cat.white .cat-ear { border-bottom: 11px solid #ffffff; }
+        /* 2. Рыжий */
+        .cat.ginger .cat-body, .cat.ginger .cat-head, .cat.ginger .cat-tail { background: #ff9933; }
+        .cat.ginger .cat-ear { border-bottom: 11px solid #ff9933; }
+        .cat.ginger .cat-eye { background: #4a90e2; }
+        /* 3. Серый */
+        .cat.grey .cat-body, .cat.grey .cat-head, .cat.grey .cat-tail { background: #a6a6a6; }
+        .cat.grey .cat-ear { border-bottom: 11px solid #a6a6a6; }
+        .cat.grey .cat-eye { background: #ffdb58; }
+        /* 4. Черный */
+        .cat.black .cat-body, .cat.black .cat-head, .cat.black .cat-tail { background: #222222; }
+        .cat.black .cat-ear { border-bottom: 11px solid #222222; }
+        .cat.black .cat-eye { background: #7ed321; }
+        /* 5. Сиамский (кремовый с темными ушками) */
+        .cat.siamese .cat-body, .cat.siamese .cat-head, .cat.siamese .cat-tail { background: #f5f5dc; }
+        .cat.siamese .cat-ear { border-bottom: 11px solid #5c4033; }
+        .cat.siamese .cat-head { background: #5c4033; } /* Темная мордочка */
+        .cat.siamese .cat-eye { background: #50e3c2; }
+
+        /* АНИМАЦИЯ ПОЯВЛЕНИЯ (КОГДА СВЕТ ВКЛ И ДВЕРЬ ОТКРЫТА) */
+        /* Каждый котенок выбегает на свою позицию на белом полу */
+        .scene-container.light-on .door.open ~ .kittens-wrapper .cat.c1 {
+            opacity: 1; transform: scale(1) translateY(65px) translateX(-65px); transition-delay: 0.1s;
+        }
+        .scene-container.light-on .door.open ~ .kittens-wrapper .cat.c2 {
+            opacity: 1; transform: scale(1) translateY(80px) translateX(-30px); transition-delay: 0.3s;
+        }
+        .scene-container.light-on .door.open ~ .kittens-wrapper .cat.c3 {
+            opacity: 1; transform: scale(1) translateY(65px) translateX(10px); transition-delay: 0.5s;
+        }
+        .scene-container.light-on .door.open ~ .kittens-wrapper .cat.c4 {
+            opacity: 1; transform: scale(1) translateY(80px) translateX(50px); transition-delay: 0.7s;
+        }
+        .scene-container.light-on .door.open ~ .kittens-wrapper .cat.c5 {
+            opacity: 1; transform: scale(1) translateY(65px) translateX(95px); transition-delay: 0.9s;
+        }
+
+        /* Анимация хвостиков */
+        @keyframes tailWag {
+            0% { transform: rotate(-12deg); }
+            100% { transform: rotate(16deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scene-container" id="mainScene">
+        
+        <!-- Дверной проем -->
+        <div class="door-frame">
+            <!-- Дверь -->
+            <div class="door" id="roomDoor" onclick="toggleDoor()">
+                <div class="door-panel panel-top"></div>
+                <div class="door-panel panel-bottom"></div>
+                <div class="handle"></div>
+            </div>
+            
+            <!-- Свет из двери -->
+            <div class="floor-glow"></div>
+
+            <!-- Группа разноцветных котят внутри проема -->
+            <div class="kittens-wrapper">
+                <!-- 1. Белый котенок -->
+                <div class="cat white c1">
+                    <div class="cat-body"></div>
+                    <div class="cat-head">
+                        <div class="cat-ear ear-left"></div><div class="cat-ear ear-right"></div>
+                        <div class="cat-eye eye-left"></div><div class="cat-eye eye-right"></div>
+                        <div class="cat-nose"></div>
+                    </div>
+                    <div class="cat-tail"></div>
+                </div>
+                <!-- 2. Рыжий котенок -->
+                <div class="cat ginger c2">
+                    <div class="cat-body"></div>
+                    <div class="cat-head">
+                        <div class="cat-ear ear-left"></div><div class="cat-ear ear-right"></div>
+                        <div class="cat-eye eye-left"></div><div class="cat-eye eye-right"></div>
+                        <div class="cat-nose"></div>
+                    </div>
+                    <div class="cat-tail"></div>
+                </div>
+                <!-- 3. Серый котенок -->
+                <div class="cat grey c3">
+                    <div class="cat-body"></div>
+                    <div class="cat-head">
+                        <div class="cat-ear ear-left"></div><div class="cat-ear ear-right"></div>
+                        <div class="cat-eye eye-left"></div><div class="cat-eye eye-right"></div>
+                        <div class="cat-nose"></div>
+                    </div>
+                    <div class="cat-tail"></div>
+                </div>
+                <!-- 4. Черный котенок -->
+                <div class="cat black c4">
+                    <div class="cat-body"></div>
+                    <div class="cat-head">
+                        <div class="cat-ear ear-left"></div><div class="cat-ear ear-right"></div>
+                        <div class="cat-eye eye-left"></div><div class="cat-eye eye-right"></div>
+                        <div class="cat-nose"></div>
+                    </div>
+                    <div class="cat-tail"></div>
+                </div>
+                <!-- 5. Сиамский котенок -->
+                <div class="cat siamese c5">
+                    <div class="cat-body"></div>
+                    <div class="cat-head">
+                        <div class="cat-ear ear-left"></div><div class="cat-ear ear-right"></div>
+                        <div class="cat-eye eye-left"></div><div class="cat-eye eye-right"></div>
+                        <div class="cat-nose"></div>
+                    </div>
+                    <div class="cat-tail"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Выключатель на стене -->
+        <div class="switch-plate" onclick="toggleLight()">
+            <div class="switch-button"></div>
+        </div>
+
+    </div>
+
+    <script>
+        function toggleDoor() {
+            document.getElementById('roomDoor').classList.toggle('open');
+        }
+
+        function toggleLight() {
+            document.getElementById('mainScene').classList.toggle('light-on');
+        }
+    </script>
+
+</body>
+</html>
